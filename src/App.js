@@ -11,13 +11,15 @@ function App() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [nothingFound, setNothingFound] = useState(false);
 	const [serverError, setServerError] = useState(false);
+	const [retryCount, setRetryCount] = useState(0);
 
 	useEffect(() => {
+		setNextPageData(undefined);
+		setResultPokemon(undefined);
+    
 		if (userInput) {
 			// setTimeout so user can finish typing
 			const search = setTimeout(async () => {
-				setNextPageData(undefined);
-				setResultPokemon(undefined);
 				setIsLoading(true);
 
 				await fetchPokemon();
@@ -28,7 +30,7 @@ function App() {
 		} else {
 			setResultPokemon(undefined);
 		}
-	}, [userInput]);
+	}, [userInput, retryCount]);
 
 	const fetchPokemon = async () => {
 		try {
@@ -48,18 +50,35 @@ function App() {
 				setNothingFound(true);
 			}
 		} catch (error) {
-			setServerError(true);
-			console.error("Error:", error);
+			if (retryCount < 3) {
+				// Maximum 3 retry attempts
+				console.error("Error:", error);
+				const retryTimer = setTimeout(() => handleRetry(), 300); //retry
+				return () => clearTimeout(retryTimer);
+			} else {
+				console.error("Maximum retry attempts reached.");
+				setServerError(true); // Show server error message after maximum retries
+			}
 		}
 
 		setIsLoading(false);
 	};
 
+	const handleRetry = () => {
+		setServerError(false);
+		setRetryCount((prevCount) => prevCount + 1);
+	};
+
+	const handleServerError = () => {
+		setRetryCount(0);
+		setServerError(false);
+	};
+
 	const showNextPage = async () => {
+		setResultPokemon(nextPageData.pokemon);
+
 		if (nextPageData.nextPage) {
 			try {
-				setResultPokemon(nextPageData.pokemon);
-
 				const updateNextPage = await getNextPage(nextPageData.nextPage);
 				setNextPageData(updateNextPage);
 			} catch (error) {
@@ -74,10 +93,9 @@ function App() {
 			{serverError ? (
 				<>
 					<p>
-						Something funky happened to the server!
-						<br /> Want to try again?
+						Sorry we can't fetch this, something funky happened to the server!
 					</p>
-					<button onClick={() => setServerError(false)}>Ok</button>
+					<button onClick={handleServerError}>Ok</button>
 				</>
 			) : (
 				<>

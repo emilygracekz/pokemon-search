@@ -7,6 +7,7 @@ function TextInput({ className, placeholder, value, id, onChange }) {
 			value={value}
 			id={id}
 			onChange={onChange}
+			autoComplete="off"
 		/>
 	);
 }
