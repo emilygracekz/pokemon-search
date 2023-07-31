@@ -16,12 +16,11 @@ function App() {
 	useEffect(() => {
 		setNextPageData(undefined);
 		setResultPokemon(undefined);
-    
+		setIsLoading(true);
+
 		if (userInput) {
 			// setTimeout so user can finish typing
 			const search = setTimeout(async () => {
-				setIsLoading(true);
-
 				await fetchPokemon();
 			}, 400);
 
